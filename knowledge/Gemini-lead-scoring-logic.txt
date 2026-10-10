@@ -1,0 +1,376 @@
+================================================================================
+GEMINI LEAD SCORING LOGIC
+Aangan Studio - hot / warm / cold classification of qualified transcripts
+Companion to: Vaani qualification rubric
+As of 9 October 2026
+================================================================================
+
+WHAT THIS IS
+
+Vaani answers the call and decides whether Aangan can serve the caller at all.
+Gemini reads the transcript of the calls Vaani passed and decides how much of a
+designer's attention the lead deserves and how fast.
+
+These are different questions. Vaani asks "can we do this work?" Gemini asks
+"how close is this person to signing, and how large is the project?" A lead can
+pass every one of Vaani's five gates and still be someone who will decide in six
+months.
+
+Gemini never re-runs qualification. It receives only transcripts Vaani marked
+QUALIFIED, and it classifies them.
+
+
+--------------------------------------------------------------------------------
+INPUT CONTRACT
+--------------------------------------------------------------------------------
+
+Gemini receives, per lead:
+
+  transcript_id      e.g. "T05"
+  transcript         full text of the call
+  channel            "phone"
+  received_at        ISO timestamp, including out-of-hours calls
+  gate_results       Vaani's five gate verdicts, each pass / pass-with-note /
+                     unresolved
+  open_questions     anything Vaani could not resolve in two questions
+  recovery_flag      true if the caller had enquired before and got no reply
+
+Gemini receives nothing else. It has no CRM history, no past project list, and
+no designer calendar. It must not behave as though it does.
+
+
+--------------------------------------------------------------------------------
+THE TWO AXES
+--------------------------------------------------------------------------------
+
+"Hot" is not one property. In the September transcripts two different things
+drive it, and they move independently:
+
+  READINESS  -  how close this person is to committing
+  VALUE      -  how large the project is in designer-days and revenue
+
+T15 (Undri 2BHK, possession in six weeks, husband already said go ahead) is
+high readiness and modest value. T12 (Kalyani Nagar villa, 5,500 sq ft) is high
+value and was, until he asked for a site visit this week, moderate readiness.
+Collapsing both into one number before scoring loses the reason for the answer,
+and the reason is what the designer needs.
+
+Score both. Then band.
+
+
+--------------------------------------------------------------------------------
+AXIS A - READINESS (0 to 10, floor at 0, cap at 10)
+--------------------------------------------------------------------------------
+
+POSITIVE SIGNALS
+
+  +3   NAMED REFERRER WHO IS A PAST CLIENT OR KNOWN TO THE STUDIO
+       The caller names a person, and that person is described as having had
+       work done by Aangan or as knowing the studio.
+       Evidence in the pack: T01 (friend had her flat done in Aundh), T05
+       (friend of the founder), W01 (referrer's flat done last year), W06
+       (referrer told them not to look further), F05 (their CEO worked with
+       Aangan before).
+       An unnamed referral ("a friend recommended you") scores +1, not +3.
+       Instagram, Google, LinkedIn and press score 0. They are not negative.
+
+  +2   SITE IS EMPTY OR THE CALLER HAS VACATED
+       New possession, bare shell, builder handover, or "we have already moved
+       out". Execution can start without choreography.
+       Evidence: T05, T06, T12, W01, F09.
+
+  +2   DECISION IS ALREADY MADE BETWEEN THE DECIDERS
+       The caller reports that the other decision-maker has agreed, or that
+       both will attend the consultation.
+       Evidence: T01, T15 ("he said to go ahead and book"), T20 (both want to
+       be at the consultation), F01.
+       This is distinct from Vaani's gate 5. Gate 5 asks whether the decider
+       will be present; this asks whether they have already said yes.
+
+  +2   A SPECIFIC START OR COMPLETION MONTH IS NAMED
+       "By March", "operational by December", "January start".
+       A season or a vague horizon ("soon", "in a few months") scores +1.
+
+  +2   SITE VISIT OR START REQUESTED WITHIN TWO WEEKS
+       Evidence: T12 ("this week or next"), T15 (can access the site now),
+       F05 ("speed matters", "ready to move fast").
+
+  +1   THE CALLER ASKED TO BOOK, OR ACCEPTED A SLOT ON THE CALL
+       Almost every forwarded lead scores this. It is a weak signal precisely
+       because it is near-universal.
+
+  +1   VOLUNTEERED A BUDGET THAT COMFORTABLY FITS THE SCOPE DESCRIBED
+       Volunteering a workable figure unprompted signals they have thought it
+       through. See the hard rule on pricing below - the figure is never
+       restated as a quote and never compared to Aangan's rate bands in output.
+
+NEGATIVE SIGNALS
+
+  -2   EXPLICITLY COMPARING STUDIOS AND UNHURRIED
+       Both conditions together. Comparing alone is normal and scores 0.
+       Evidence: F06 ("shortlisted 3 studios ... not in a rush to decide").
+
+  -3   DEFERRED THE DECISION ON THE CALL
+       "Let me think and call back", "maybe later", "we're still early stage".
+       Evidence: T07, W10.
+
+  -1   CALLER IS AN INTERMEDIARY AND THE DECIDER HAS NOT YET ENGAGED
+       The lead still passed gate 5, so the penalty is small.
+       Evidence: T14 ("I'm just calling to see if it's worth pursuing").
+
+  -1   SITE ACCESS IS MORE THAN THREE MONTHS AWAY WITH NO DESIGN START AGREED
+       Long lead time is not disqualifying - Aangan's design phase is 3-4 weeks
+       and can run ahead - but it delays revenue and lets a competitor in.
+
+
+--------------------------------------------------------------------------------
+AXIS B - VALUE (0 to 10, cap at 10)
+--------------------------------------------------------------------------------
+
+This estimates designer-days and project size. It is NEVER a price, and nothing
+from this axis is spoken to a caller or written as a figure in the brief.
+
+  CARPET AREA                    2,000 sq ft or more        +4
+                                 1,000 to 1,999 sq ft       +3
+                                 600 to 999 sq ft           +2
+                                 under 600 sq ft            +1
+                                 not stated                 +2  (neutral default)
+
+  SCOPE                          full home or full fitout   +3
+                                 two or more rooms          +2
+                                 single room                +1
+
+  SPECIFICATION MARKERS          +1 each, maximum +2
+                                 - villa or independent house
+                                 - principal or senior designer requested
+                                 - caller leads with materials, finishes or a
+                                   named aesthetic
+                                 - caller moved out specifically for execution
+
+  COMMERCIAL HEADCOUNT           50 or more workstations    +2
+                                 20 to 49 workstations      +1
+                                 (replaces specification markers for offices)
+
+The "not stated" default of +2 is deliberate. Absence of a carpet area is not
+evidence of a small project - it is evidence that nobody asked. T13 and T16 both
+reached booking without area being established.
+
+
+--------------------------------------------------------------------------------
+BANDING
+--------------------------------------------------------------------------------
+
+  TOTAL = READINESS + VALUE          (0 to 20)
+
+  HOT     total 13 or more, OR readiness 8 or more at any value
+  WARM    total 7 to 12
+  COLD    total 6 or less
+
+The readiness override exists because a decided buyer with a small flat is worth
+answering before an undecided buyer with a large one. Readiness converts; value
+only determines how much the conversion is worth.
+
+OVERRIDES, APPLIED AFTER BANDING
+
+  RECOVERY   recovery_flag is true (T16, W08 pattern). Route as HOT regardless
+             of band. This caller is deciding whether to trust the studio, and
+             the cost of a second failure is the relationship, not the project.
+
+  THIN       fewer than three scored signals in total. Band is advisory only;
+             set confidence to "low" and put the missing facts in
+             open_questions. Do not let a thin transcript produce a confident
+             COLD.
+
+
+--------------------------------------------------------------------------------
+WHAT THE BANDS MEAN OPERATIONALLY
+--------------------------------------------------------------------------------
+
+  HOT     Senior designer. Offer a site visit, not a phone consultation.
+          Brief sent immediately; first human contact within the hour, whatever
+          time the call came in.
+
+  WARM    Next available designer. Phone or studio consultation.
+          Brief sent within the hour; contact same working day.
+
+  COLD    Standard queue. Phone consultation. Brief sent with the day's batch.
+
+COLD DOES NOT MEAN IGNORE. Every lead Gemini sees has already passed all five of
+Vaani's gates, which means Aangan can serve them and wants to. The band decides
+who calls and how fast, never whether anyone calls. An enquiry answered within
+an hour converts at four times the rate of one answered the next day, and that
+multiplier applies to cold leads too.
+
+
+--------------------------------------------------------------------------------
+HARD RULES
+--------------------------------------------------------------------------------
+
+1. NEVER RE-QUALIFY.
+   Gemini does not overturn Vaani's gates. If the transcript suggests a gate was
+   wrong - the site is actually in Talegaon, the caller actually wants advice
+   only - Gemini sets band to COLD, confidence to "low", and writes the conflict
+   into open_questions for a human. It does not reclassify the lead as
+   unqualified.
+
+2. NEVER OUTPUT A PRICE.
+   No figure, no range, no per-square-foot rate, no estimate of what the project
+   will cost. A budget the caller volunteered is recorded as a signal and may be
+   passed through verbatim to the designer's brief, but Gemini never evaluates
+   it against Aangan's rate bands in anything a caller could see, and never
+   generates a number of its own.
+
+3. EVERY SIGNAL NEEDS A QUOTE.
+   A signal scores only if Gemini can cite a fragment of the transcript, twelve
+   words or fewer, that supports it. No quote, no points. This is what makes the
+   score auditable when a designer disagrees with it.
+
+4. ABSENCE IS NOT A PENALTY.
+   An unstated fact scores zero and goes into not_established. It never
+   subtracts. The negative signals above all require the caller to have actively
+   said something.
+
+5. NEVER SCORE ON LOCALITY, NAME, LANGUAGE OR ACCENT.
+   Do not infer budget or seriousness from which part of Pune the site is in.
+   Do not score a Hindi or Marathi call differently from an English one - W03
+   was conducted entirely in Hindi and converted. Area and scope are scored
+   because the caller stated them; a postcode is not a signal.
+
+6. NEVER INVENT.
+   No facts that are not in the transcript. No inferred carpet areas, no assumed
+   timelines, no guessed relationships to past clients.
+
+7. ESCALATIONS NEVER REACH GEMINI.
+   An existing-project complaint (T09 pattern) is routed to a human by Vaani
+   before this step. If one arrives here anyway, output band "ESCALATE" and stop
+   scoring.
+
+
+--------------------------------------------------------------------------------
+OUTPUT FORMAT
+--------------------------------------------------------------------------------
+
+Return strict JSON. No prose outside it, no markdown fences.
+
+{
+  "transcript_id": "T05",
+  "band": "HOT",
+  "total": 15,
+  "readiness": {
+    "score": 8,
+    "signals": [
+      {"signal": "named_referrer_known_to_studio", "weight": 3,
+       "evidence": "Vikram Agarwal asked me to call"},
+      {"signal": "site_vacated", "weight": 2,
+       "evidence": "We've already moved out temporarily"},
+      {"signal": "specific_month_named", "weight": 2,
+       "evidence": "move back in by February"},
+      {"signal": "booking_accepted", "weight": 1,
+       "evidence": "Yes please - Vikram said your team does that"}
+    ]
+  },
+  "value": {
+    "score": 7,
+    "signals": [
+      {"signal": "carpet_area_2000_plus", "weight": 4,
+       "evidence": "about 2,400 sq ft carpet"},
+      {"signal": "full_home", "weight": 3,
+       "evidence": "Complete redesign. New flooring, kitchen"}
+    ]
+  },
+  "overrides_applied": [],
+  "routing": "senior_designer_site_visit_within_1h",
+  "confidence": "high",
+  "not_established": ["current_state_of_flooring"],
+  "open_questions": [],
+  "one_line_for_designer": "Referred by a friend of Nikhil's, flat already vacated, February deadline."
+}
+
+FIELD RULES
+
+  band                  HOT | WARM | COLD | ESCALATE
+  total                 must equal readiness.score + value.score
+  confidence            "high"   both carpet area and timeline established
+                        "medium" one of the two missing
+                        "low"    both missing, or fewer than three signals, or
+                                 a gate conflict was detected
+  one_line_for_designer at most 20 words, facts only, no band label, no number.
+                        This is the line that appears at the top of the
+                        Telegram brief.
+
+
+--------------------------------------------------------------------------------
+CALIBRATION - SEPTEMBER PHONE CALLS SCORED
+--------------------------------------------------------------------------------
+
+Twelve forwarded calls, worked through. Use these to check that a change to the
+weights has not moved the whole set.
+
+CALL  R   V   TOT  BAND  DRIVING SIGNALS
+-------------------------------------------------------------------------------
+T01   8   6   14   HOT   Past-client referral, both owners agreed, March named
+T05   8   7   15   HOT   Referral via founder's friend, already moved out, Feb
+T12   7   8   15   HOT   Empty new villa 5,500 sq ft, site visit asked for
+                         this week, principal designer requested
+T06   7   6   13   HOT   Bare-shell office, founder is the decider, December
+T15   7   5   12   WARM  Spouse already agreed, site accessible now, but a
+                         875 sq ft 2BHK - high readiness, modest value
+T20   5   5   10   WARM  Both owners attending, January start, 900 sq ft
+T02   3   5    8   WARM  November move-in named; no referral, no decision
+                         signal beyond booking
+T13   1   6    7   WARM  1,100 sq ft full scope, but timeline never
+                         established and nothing else volunteered
+T11   2   5    7   WARM  Rented 2BHK, landlord cleared, no date named
+T14   1   5    6   COLD  Son enquiring; parents will attend but have not yet
+                         agreed to proceed
+T17   3   6    9   WARM  Full 3BHK 1,050 sq ft, March, booking accepted
+T16   -   -    -   HOT   Recovery override. Scored 7 on merit; routed hot
+                         because the studio already failed this caller once
+-------------------------------------------------------------------------------
+
+Two from the web form, as a cross-channel check for when the build extends:
+
+F05   9   9   18   HOT   Their CEO worked with Aangan, shell-and-core 2,200
+                         sq ft, 55 workstations, Jan 15, "ready to move fast".
+                         Readiness override would have fired on its own.
+F06   0   7    7   WARM  1,950 sq ft 4BHK with a stated budget, but shortlisted
+                         three studios and explicitly unhurried. Valuable and
+                         slow - exactly the case the two axes exist to separate.
+
+
+--------------------------------------------------------------------------------
+KNOWN WEAKNESSES
+--------------------------------------------------------------------------------
+
+  - The weights are fitted to twenty phone calls from one month, and none of
+    them has a known outcome. Nobody knows which of these twelve actually
+    signed. Until booked-versus-signed data exists, these numbers encode
+    judgement, not evidence.
+
+  - "Named referrer who is a past client" at +3 is the single heaviest signal
+    and rests on five transcripts. If it is wrong, the whole top of the
+    distribution is wrong.
+
+  - Value is a proxy for a proxy. Carpet area stands in for project size, which
+    stands in for revenue, and specification is the part that actually moves the
+    number - which Gemini cannot see from a four-minute call.
+
+  - A caller who is simply articulate will score higher than one who is not,
+    because every signal requires them to have said something. Rule 4 limits the
+    damage but does not remove it.
+
+  - There is no feedback loop yet. Re-score 20 live calls each month against
+    what actually converted, and move the weights deliberately rather than
+    letting them drift.
+
+
+--------------------------------------------------------------------------------
+SOURCES
+--------------------------------------------------------------------------------
+
+Signals and calibration are drawn from the four documents in the case pack:
+services.md (scope and timeline bounds), pricing.md (the no-quote rule and the
+specification spread that makes value an estimate rather than a price),
+qualified.md (the gates this step must not re-run), and the 40 anonymised
+September 2026 enquiry transcripts. Transcript references use the case pack's
+own IDs. The conversion and volume figures are from the Case 03 brief.

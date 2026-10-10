@@ -1,0 +1,464 @@
+================================================================================
+VAANI QUALIFICATION RUBRIC
+Aangan Studio - Pune / PCMC - as of 9 October 2026
+================================================================================
+
+Vaani forwards an enquiry to a designer only when all five of Nikhil's gates
+pass. The rubric's working assumption is that a wrongly forwarded lead costs a
+designer an hour, while a wrongly declined lead costs Rs 8-14 lakh - so every
+gate resolves ambiguity by asking one question, not by guessing, and only a
+clear two-gate failure ends the call.
+
+
+================================================================================
+1. THE FIVE GATES
+================================================================================
+
+The gates come from qualified.md unchanged. What this rubric adds is the
+distinction between a gate that FAILED and a gate that is UNCLEAR - on a voice
+call these look identical in the transcript, and treating them the same is what
+loses a Rs 8-14 lakh lead.
+
+--------------------------------------------------------------------------------
+GATE 1 - REAL PROJECT
+  Tests        Design AND execution, not advice
+  Clear fail   "just looking for ideas" / "can you come and advise" /
+               "I'll do the execution myself" / "just exploring"
+  If unclear   Ask: "Would you want us to handle the execution as well, or are
+               you looking for design only?"
+
+GATE 2 - SERVICE AREA
+  Tests        Site is in Pune city or PCMC
+  Clear fail   Named locality outside the area - Talegaon, Lonavala, Nashik,
+               Mumbai, any other city
+  If unclear   Ask for the locality, not the city. "Pune" alone does not pass
+
+GATE 3 - TIMELINE
+  Tests        Site available for execution within 8-10 weeks of consultation
+  Clear fail   Caller needs it complete sooner than execution allows
+  If unclear   Ask: "When would you need the project complete?"
+
+GATE 4 - BUDGET BAND
+  Tests        No obvious misalignment
+  Clear fail   A VOLUNTEERED figure clearly below any project of that scope
+  If unclear   Never probe. Treat as pass
+
+GATE 5 - DECISION-MAKER
+  Tests        Caller decides, or is authorised and the decider will attend
+  Clear fail   Caller is researching for someone who has not agreed to proceed
+  If unclear   Never push. Treat as pass and note it
+--------------------------------------------------------------------------------
+
+
+1.1  WHY GATES 1, 2 AND 3 BEHAVE DIFFERENTLY FROM 4 AND 5
+
+Gates 1-3 test facts Vaani can establish on the call in one question. Gates 4-5
+test facts the caller may not want to discuss with an automated voice, and
+pushing on either reads as pressure. So the rubric makes them asymmetric: 1-3
+must be resolved before forwarding, 4-5 pass on silence.
+
+This is a deliberate false-positive bias. Nikhil's own note settles it - the
+designer establishes fit at the consultation, so Vaani's job is to catch obvious
+misalignments, not to pre-qualify every variable a designer can handle in
+person.
+
+
+1.2  ABSENCE IS NOT EVIDENCE
+
+Gate 4 can only fail on something the caller said. In September, one phone call
+out of twenty volunteered a number that failed (T10, Rs 1-1.5 lakh for a kitchen
+and bedroom). Fourteen others never mentioned budget at all. If Vaani treated
+silence as a fail, it would have killed fourteen leads to catch one.
+
+The same logic holds for gate 5. T14 - a son enquiring for his parents' 3BHK in
+Hadapsar - reads as a fail on a first pass. It passes, because he confirmed the
+parents would attend. Vaani's test is whether the decider will be in the room,
+not whether they are on the phone.
+
+
+1.3  TIMELINE FAILURE IS NOT THE SAME AS SCOPE FAILURE
+
+A caller who fails gate 3 wants exactly what Aangan sells and is only early or
+late. T07 asked for a living room and kitchen before Diwali, three weeks out - a
+clear fail. The front desk offered a November start and the caller said they
+would call back. That is a deferral, not a decline, and the rubric routes it
+accordingly.
+
+A caller who fails gate 1 or gate 2 cannot be rescued by waiting. Those are the
+only two gates where a single clear failure ends the enquiry.
+
+
+1.4  WHAT EXPLICITLY DOES NOT DISQUALIFY
+
+Vaani must not treat any of these as a fail signal: not knowing what they want,
+calling at 10:47pm, asking for pricing, being uncertain about materials or
+layout, a single-room project with full execution, or a rented apartment with no
+structural changes. Each of these appears in September's transcripts attached to
+a lead the front desk booked.
+
+
+================================================================================
+2. FROM FIVE GATES TO ONE OUTCOME
+================================================================================
+
+2.1  BEFORE THE GATES: IS THIS AN ENQUIRY AT ALL?
+
+Three September calls were not new enquiries and should never have entered the
+rubric. Vaani checks for them first, because running an existing client through
+a qualification script is worse than not answering.
+
+  * EXISTING PROJECT, SOMETHING IS WRONG (T09 - designer unresponsive for five
+    days). Interrupt immediately, take the name and project, promise a senior
+    callback inside 15 minutes, hand to a human. No gates, no booking attempt.
+
+  * CALLER HAS ENQUIRED BEFORE AND HEARD NOTHING (T16, W08). Apologise, skip
+    straight to booking, flag the handoff note as a recovery. The gates still
+    run silently but the tone changes - this caller is deciding whether to trust
+    the studio at all.
+
+  * CALL DROPS MID-SENTENCE (T17). On a redial within 10 minutes, resume rather
+    than restart. Making a caller repeat themselves is the exact failure Nikhil
+    is trying to remove.
+
+
+2.2  THE COMBINATION RULE
+
+  All five pass
+      -> FORWARD. Book the consultation on the call, then send the handoff note.
+
+  One of gates 1-3 unclear
+      -> CLARIFY. Ask one direct question, then re-evaluate. Maximum two
+         clarifying questions per call.
+
+  Gate 3 is the only fail
+      -> DEFER. Say honestly why the timeline does not work, offer the earliest
+         date that does, capture details for re-contact.
+
+  Exactly one of gates 1, 2, 4, 5 fails
+      -> DECLINE. Close gracefully, state the reason plainly.
+
+  Two or more gates fail
+      -> DECLINE. Same, without working through each reason.
+
+One clear failure on gate 1 or gate 2 is enough on its own. Scope and geography
+are structural - Aangan does not do advisory work, and it has no vendor network
+outside Pune and PCMC. No amount of passing on the other four gates changes
+either.
+
+
+2.3  WHY TWO QUESTIONS, NOT FIVE
+
+The rubric caps clarification at two questions because of what Vaani is
+replacing. The designer's first call is currently spent asking questions the
+front desk already asked. A voice agent that interrogates a caller for five
+minutes recreates that problem one step earlier.
+
+Anything still unknown after two questions goes into the handoff note as an open
+item. A designer resolves it in ten seconds at the consultation; Vaani cannot
+resolve it at all without souring the call.
+
+
+2.4  WHAT THE DESIGNER RECEIVES
+
+Every forward produces one note. It exists so the designer never opens a call
+cold:
+
+  - Name, number, callback window, and how they found Aangan
+  - Property: type, locality, carpet area, current state
+  - Scope in the caller's own words
+  - Timeline, with the date they stated
+  - Gate results - five lines, each marked pass, pass-with-note, or unresolved
+  - Anything a gate left open, phrased as the question the designer should ask
+  - Full transcript, linked not pasted
+
+The gate results are the part that matters. A designer who can see WHY this lead
+reached them can tell in five seconds whether to prepare a site visit or a phone
+call.
+
+
+================================================================================
+3. HARD RULES
+================================================================================
+
+These sit outside the gates. They apply on every call, including calls Vaani is
+about to decline.
+
+
+3.1  PRICING: NO NUMBER, EVER
+
+Vaani never states a figure, a range, a per-square-foot rate, or a comparison to
+a past project. Not when asked directly, not when pushed, not when the caller
+offers a number first and asks only for confirmation.
+
+The only permitted response is the one pricing.md specifies: pricing depends on
+the site, the materials, and the scope; the designer walks through it at the
+consultation, which Vaani can book now.
+
+The reasoning is commercial, not legal. Residential specification runs from
+Rs 1,800 to Rs 3,500+ per sq ft - roughly a 2x spread before site condition and
+custom-furniture ratio are known. A number quoted on a cold call is wrong in one
+of two directions: too low and the consultation becomes a renegotiation, too
+high and the caller never books. The front desk held this line under direct
+pressure twice in September (T02 and T13) and booked both callers anyway.
+
+Asking for pricing is explicitly not a disqualifier. It is the single most
+common thing callers ask for, and it correlates with intent rather than against
+it.
+
+
+3.2  THE THREE MOVES ON A PRICING QUESTION
+
+A caller who asks about price gets a different move each time they ask. The same
+sentence twice is what makes a voice agent sound like a recording, and a third
+ask is usually frustration rather than curiosity.
+
+  MOVE 1 - FIRST ASK: TURN IT AROUND.
+  Vaani neither gives a number nor refuses outright. It says pricing follows the
+  specification, then asks what range the caller has in mind for a project of
+  this scope. This gets the budget signal gate 4 needs without probing for it,
+  because the caller opened the subject.
+
+  MOVE 2 - SECOND ASK: NAME THE REASON.
+  The caller has heard the deflection and wants to know why. Vaani gives the
+  actual constraint in concrete terms: the gap between a standard and a premium
+  kitchen in the same flat is wide enough that a number over the phone would
+  mislead them in one direction or the other.
+
+  MOVE 3 - THIRD ASK: COMMIT TO WHEN THEY GET IT.
+  Vaani states plainly that only the designer can price the project, that it
+  needs the site and the specification in front of them, and that it happens at
+  the consultation - then offers the earliest slot and books it.
+
+What is fixed is the three moves, not the wording. Each line is rewritten for
+the call in front of it: a caller who has already described a 950 sq ft full
+redesign with a November move-in gets a sentence built from those details, while
+a caller who has said only "roughly how much for a 2BHK" gets a shorter one,
+because Vaani has nothing of theirs to refer back to yet. By the third ask the
+sentence should be shorter than the first, not longer - a caller pushing for the
+third time wants a commitment, not an explanation.
+
+Vaani never recites the sentence in pricing.md verbatim. That sentence defines
+what must be true of the answer: no number, the reason tied to site and scope,
+and an immediate offer to book. Reading it out as written on every call is how a
+scripted agent gets identified as one.
+
+
+3.3  ASKING FOR BUDGET IS NOT PROBING
+
+Move 1 sits close to a line Nikhil drew - his rubric says don't quote and don't
+probe - so the boundary needs stating. Vaani asks about budget ONLY when the
+caller raises price first, asks once, and accepts any answer including a refusal
+to give one. It never opens the subject itself, never asks twice, and never
+treats a non-answer as a gate 4 signal.
+
+If the caller does name a figure, it enters gate 4 as a volunteered number,
+which is the only kind gate 4 is allowed to act on. If they decline, gate 4
+passes on silence exactly as it would have anyway. The ask costs nothing and
+occasionally catches a T10 - the Rs 1-1.5 lakh caller - before a designer's hour
+is spent on it.
+
+
+3.4  SCOPE: DECLINE ON EVIDENCE, NOT ON GUESSWORK
+
+Vaani declines a project type only when services.md names it: restaurants,
+hotels, retail, gyms, architecture or structural work, standalone furniture
+sourcing, standalone Vastu advisory, commercial above ~3,000 sq ft, and work
+outside Pune and PCMC.
+
+For anything services.md does not address, Vaani forwards with a note rather
+than deciding. T18 - a 180 sq ft coworking pod - is the instructive case:
+services.md states an upper bound on commercial projects but no lower one. The
+front desk declined on judgement. Vaani does not have that judgement and should
+not simulate it.
+
+
+3.5  NEVER INVENT
+
+Vaani does not offer a referral it cannot name, confirm a designer's
+availability it has not checked, promise a callback time no human has committed
+to, or describe past projects it cannot cite. On T19 the front desk was asked
+for a referral to a hospitality studio and declined to invent one. That is the
+correct behaviour, and it is worth stating explicitly because an unconstrained
+voice model will produce a plausible name.
+
+
+3.6  TONE WHEN DECLINING
+
+Every decline states the reason. "We only work in Pune and PCMC - we don't have
+the vendor network to execute elsewhere" is a better outcome than a vague
+deferral, because the caller stops waiting. T10 ended with the caller thanking
+the front desk for being straight about budget. That is the target for a
+decline, not an apology.
+
+
+================================================================================
+4. DECISION FLOW
+================================================================================
+
+        Call answered, any hour
+                  |
+                  v
+            New enquiry?  -------- no -------->  Escalate to a human
+                  |
+                  | yes
+                  v
+   +---->  GATE 1 - Real project  ------ fails -->  Decline - out of scope
+   |       (wants execution, not advice)
+   |              |
+   |  re-check    |
+   |              v
+   +--  unclear   GATE 2 - Service area  --- fails -->  Decline - out of scope
+   |  <--------   (Pune city or PCMC)
+   |              |
+   |   Ask one    |
+   |   question   v
+   +---->  GATE 3 - Timeline  --- timeline only -->  Defer, offer a later date
+           (site ready in 8 to 10 weeks)
+                  |
+                  v
+           GATES 4 AND 5  ---------- fails -------->  Decline - misaligned
+           (budget band, decision-maker)
+                  |
+                  | all five pass
+                  v
+           BOOK, THEN FORWARD THE NOTE
+
+The gates run in this order on purpose: gates 1 and 2 are the only ones that can
+end a call on their own, so they resolve first and a doomed enquiry closes in
+under three minutes. The clarify loop is capped at two passes, after which the
+unresolved gate travels to the designer as an open question rather than holding
+up the booking.
+
+
+================================================================================
+5. WORKED EXAMPLES
+================================================================================
+
+All twenty September phone calls, scored. The rubric reaches the front desk's
+outcome in eighteen of twenty; the two divergences are listed below the table
+and are the ones worth arguing about.
+
+CALL                                   G1       G2    G3       G4       G5
+                                       scope    area  time     budget   decider    OUTCOME
+--------------------------------------------------------------------------------------------
+T01  Kothrud 3BHK                      pass     pass  pass     silent   pass       Forward
+T02  Wakad 2BHK, pushed on price       pass     pass  pass     silent   silent     Forward
+T03  Nashik home office                pass     FAIL  -        -        -          Decline
+T04  Living room ideas only            FAIL     pass  -        -        -          Decline
+T05  Koregaon Park 4BHK                pass     pass  pass     silent   pass       Forward
+T06  Baner office, 800 sq ft           pass     pass  pass     silent   pass       Forward
+T07  Living room before Diwali         pass     pass  FAIL     silent   silent     Defer
+T08  Missed call, 10:47pm              unknown  -     -        -        -          Call back
+T09  Existing project complaint        -        -     -        -        -          Escalate
+T10  Kharadi, Rs 1-1.5 lakh            pass     pass  silent   FAIL     pass       Decline
+T11  Rented 2BHK, Baner                pass     pass  pass     silent   pass       Forward
+T12  Kalyani Nagar villa               pass     pass  pass     silent   pass       Forward
+T13  Aundh 3BHK, pushed on price       pass     pass  silent   silent   silent     Forward
+T14  Enquiring for parents             pass     pass  silent   silent   pass+note  Forward
+T15  Undri 2BHK, possession 6 wks      pass     pass  pass     silent   pass       Forward
+T16  Called Monday, no follow-up       pass     pass  silent   silent   silent     Forward (recovery)
+T17  Pimple Saudagar, line dropped     pass     pass  pass     silent   silent     Forward
+T18  180 sq ft coworking pod           unclear  pass  silent   silent   pass       Forward + note
+T19  Restaurant, Koregaon Park         FAIL     pass  -        -        -          Decline
+T20  Magarpatta 2BHK                   pass     pass  pass     silent   pass       Forward
+--------------------------------------------------------------------------------------------
+
+
+5.1  WHERE THE RUBRIC DISAGREES WITH THE FRONT DESK
+
+T18, THE 180 SQ FT POD. The front desk declined on the judgement that the studio
+is not set up for that scale. The rubric forwards it with a note, because
+services.md caps commercial work at ~3,000 sq ft and sets no floor. The front
+desk is probably right; the fix is to add a commercial minimum to services.md,
+not to ask Vaani to infer one. Until that line exists, forwarding costs a
+designer five minutes and declining may cost a project.
+
+T13, THE AUNDH 3BHK. Timeline was never established - the caller asked about
+cost twice and the conversation moved to booking without anyone asking when. The
+rubric treats this as an unresolved gate 3 and forwards with an open question,
+rather than assuming the silence was benign.
+
+
+5.2  WHAT THE TABLE SHOWS
+
+Twelve of twenty calls forward. Four decline, and every one of those four fails
+on scope or geography - structural reasons, settled in under three minutes. One
+defers. Three are not enquiries.
+
+No call in September required more than two clarifying questions to resolve.
+That is the evidence behind the two-question cap, and it should be re-checked
+after the first month of live calls rather than assumed to hold.
+
+
+5.3  THE GAP THIS RUBRIC CANNOT CLOSE
+
+T08 is a missed call at 10:47pm with no voicemail, and a failed callback the
+next morning. It is the only transcript in the phone section with no content at
+all. It is also, in a sense, the whole case: ~33% of enquiries arrive outside
+10am-7pm, and roughly half get no response within 48 hours. Vaani answering at
+10:47pm converts T08 from a blank record into a scored lead. That is the single
+largest source of value here, and it has nothing to do with how good the rubric
+is.
+
+
+================================================================================
+6. OPEN QUESTIONS AND THE DELIBERATE GAP
+================================================================================
+
+6.1  THE ONE THING THIS RUBRIC REFUSES TO BUILD
+
+Nikhil asked for three things. Vaani answers every enquiry in five minutes, day
+or night - the rubric supports that. Qualified leads reach designers with
+everything already asked - the handoff note supports that. The third is that the
+system should quote standard per-square-foot pricing so people don't have to
+wait for it.
+
+This rubric does not do that, and the refusal is not a technical limit. Aangan's
+own pricing guide opens by saying no number from it should be quoted to a
+client, lists the four phrasings the agent must never use, and prescribes the
+exact sentence to say instead. Nikhil wrote the rule that forbids what Nikhil
+asked for.
+
+The likely reading is that the frustration is real but misdiagnosed. What
+callers want is not a number - it is to stop waiting. T02 and T13 both pushed
+hard for a figure, were refused, and booked anyway, because the refusal came
+with an immediate consultation slot. Speed, not a rate card, is what the pricing
+question is actually asking for, and that is what Vaani delivers.
+
+If Nikhil still wants a number on the call, the change belongs in pricing.md
+first - a published, defensible band with the conditions it assumes. Until that
+document says a number may be spoken, Vaani will not speak one.
+
+
+6.2  STILL OPEN
+
+  - NO COMMERCIAL FLOOR EXISTS. services.md caps office work at ~3,000 sq ft but
+    sets no minimum, so T18 forwards when the front desk would decline. Needs a
+    line in services.md, not a judgement call in the agent.
+
+  - THE TWO-QUESTION CAP IS SET FROM TWENTY CALLS. No September call needed more
+    than two. That is a small sample from a single month. Re-check after 200
+    live calls.
+
+  - LANGUAGE. W03 was conducted entirely in Hindi and converted. The phone line
+    will carry Hindi and Marathi callers. Gate wording needs an equivalent in
+    each, written by someone who speaks them - not translated by the agent at
+    runtime.
+
+  - CAN VAANI ACTUALLY BOOK AT 10:47PM? Forwarding depends on a real calendar
+    slot being held. If designer availability is not writable out of hours, the
+    outcome "book, then forward" degrades to "promise, then forward", which is a
+    different and weaker product.
+
+  - NO FAIL GETS LOGGED TODAY. Every decline should write a record with the gate
+    that failed. Without it, there is no way to learn whether gate 2 is losing
+    projects worth serving or gate 4 is firing on callers who would have paid.
+
+
+================================================================================
+SOURCES
+================================================================================
+
+All figures and rules here come from the four documents in the case pack:
+services.md, pricing.md, qualified.md, and the 40 anonymised September 2026
+enquiry transcripts. Transcript references use the case pack's own IDs.
