@@ -80,7 +80,7 @@ See [`.env.example`](.env.example). Summary:
 ## Before going live
 
 - **The dashboard is open.** It shows callers' names, phone numbers and transcripts to anyone who has the URL. That's fine on a studio-only network or behind a tunnel, but a public deployment should add at least a shared passcode or IP allow-list.
-- **Hosting.** Data is a local SQLite file (`data/lcms.db`). That works on a single server or VM. Serverless hosts (e.g. Vercel) have no persistent disk, so deploying there means moving `src/lib/db.ts` / `repo.ts` to Postgres (e.g. Supabase); the queries are plain SQL.
+- **Hosting / database.** Data is a SQLite file (`data/lcms.db` locally). On Vercel it lives in `/tmp`, which is per-instance and wiped on restart — so the Vercel deployment runs with `SEED_DEMO_DATA=true` as a **demo only**: new calls and saved prices do not persist. Before connecting real Vaani calls, move `src/lib/db.ts` / `repo.ts` to Postgres (planned: Neon); the queries are plain SQL.
 - **Vaani payload.** The webhook normaliser accepts the contract in `vaani/integration.md` plus common aliases; confirm against a real Vaani payload once the agent is set up.
 - **Calendar.** Bookings are held in the app until a provider is chosen; add an adapter in `calendar.ts` (`busy()` + `createEvent()`).
 - **HubSpot band.** The band and score go into the contact's note. A custom contact property (e.g. `lead_band`) would make it filterable in HubSpot — needs creating in the portal first.

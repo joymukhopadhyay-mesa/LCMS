@@ -96,7 +96,9 @@ const globalForDb = globalThis as unknown as { __lcmsDb?: DatabaseSync };
 export function db(): DatabaseSync {
   if (globalForDb.__lcmsDb) return globalForDb.__lcmsDb;
   // Runtime location, not a build input - keep the bundler from tracing the whole project.
-  const file = path.resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || "./data/lcms.db");
+  // On Vercel only /tmp is writable, and it does not survive restarts: a demo stopgap until Postgres.
+  const fallback = process.env.VERCEL ? "/tmp/lcms.db" : "./data/lcms.db";
+  const file = path.resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || fallback);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const conn = new DatabaseSync(file);
   conn.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");

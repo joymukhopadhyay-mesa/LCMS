@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/Icon";
 import { metrics } from "@/lib/repo";
+import { ensureDemoData } from "@/lib/demo-seed";
 import { fmtDate } from "@/lib/format";
 import "./globals.css";
 
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  ensureDemoData();
   const m = metrics();
   return (
     <html lang="en">
