@@ -2,8 +2,6 @@
 // pack (knowledge/september-2026-enquiries.txt), as if Vaani had taken them.
 //
 //   npm run seed            -> wipe and reload demo data (scripts/seed.ts)
-//   SEED_DEMO_DATA=true     -> load it automatically when the database is empty
-//                              (used on Vercel, where /tmp storage is not kept)
 //
 // Vaani outcomes and gate verdicts follow the worked-examples table in
 // Vaani-qualification-rubric.txt. Bands come from running hand-labelled
@@ -16,7 +14,7 @@ import path from "node:path";
 import { insertCall, resetDatabase, saveScore, updatePrice, logEvent } from "./repo.ts";
 import { finaliseScore } from "./scoring.ts";
 import type { GateResults, IncomingCall, LeadFacts, Outcome } from "./types.ts";
-import { db } from "./db.ts";
+import { query } from "./db.ts";
 
 function readTranscripts(): string {
   return fs
@@ -98,6 +96,7 @@ type Seed = {
   signals?: [string, string][];
   oneLine?: string;
   calibration?: [number, number, string]; // R, V, band from the logic file
+  pricing?: boolean; // the caller asked what it would cost
 };
 
 const P = "+91 98xxx xx";
@@ -111,7 +110,7 @@ const S: Record<string, Seed> = {
     oneLine: "Past-client referral, both owners agreed, whole flat, wants it finished by March.", calibration: [8, 6, "HOT"],
   },
   T02: {
-    outcome: "FORWARD", phone: `${P}102`, gates: gates("pass", "pass", "pass", "silent", "silent"),
+    outcome: "FORWARD", pricing: true, phone: `${P}102`, gates: gates("pass", "pass", "pass", "silent", "silent"),
     facts: { locality: "Wakad", property_type: "2BHK", carpet_area: "~950 sq ft", scope: "Full redesign - modular kitchen, wardrobes, living room, both bedrooms", timeline: "Moving in November; design from October", source: "Instagram",
       brief: "Instagram enquiry for a full 2BHK redesign in Wakad, moving in November. Pushed twice for a ballpark price and booked once told the designer would cover it." },
     open: ["Who else decides? Decision-maker was not discussed."],
@@ -159,7 +158,7 @@ const S: Record<string, Seed> = {
     oneLine: "Empty new villa, full design, March move-in, wants the principal designer on site now.", calibration: [7, 8, "HOT"],
   },
   T13: {
-    outcome: "FORWARD", phone: `${P}113`, gates: gates("pass", "pass", "unresolved", "silent", "silent", { timeline: "Never established - call moved to booking" }),
+    outcome: "FORWARD", pricing: true, phone: `${P}113`, gates: gates("pass", "pass", "unresolved", "silent", "silent", { timeline: "Never established - call moved to booking" }),
     facts: { locality: "Aundh", property_type: "3BHK", carpet_area: "~1,100 sq ft", scope: "Kitchen, wardrobes in both bedrooms, living room", timeline: null, source: null,
       brief: "Aundh 3BHK, about 1,100 sq ft - kitchen, wardrobes and living room. Pushed twice for a rough cost, then booked. Timeline was never asked." },
     open: ["When would they need the project complete?"],
@@ -226,10 +225,9 @@ function bookingIso(receivedAt: string, days: number, time: string): [string, st
 }
 
 /** Wipe the database and load the September demo calls. Returns the engine-vs-calibration report. */
-export function seedDemo(): string[] {
+export async function seedDemo(): Promise<string[]> {
   const parsed = parse();
-  db();
-  resetDatabase();
+  await resetDatabase();
 
   const report: string[] = [];
   for (const [tid, seed] of Object.entries(S)) {
@@ -261,8 +259,12 @@ export function seedDemo(): string[] {
       bookingStart: bs,
       bookingEnd: be,
       bookingMode: seed.booking?.mode ?? null,
+      bookingStatus: seed.booking ? "confirmed" : seed.outcome === "FORWARD" ? "none" : null,
+      pricingAsked: Boolean(seed.pricing),
+      outcomeReceived: true,
+      transcriptReceived: true,
     };
-    const { id } = insertCall(call);
+    const { id } = await insertCall(call);
 
     if (seed.signals) {
       const score = finaliseScore(call.externalId, call.transcript, {
@@ -279,8 +281,8 @@ export function seedDemo(): string[] {
         caller_name: f.caller_name ?? null, locality: null, property_type: null, carpet_area: null, scope: null,
         timeline: null, source: null, budget_volunteered: null, brief: f.brief ?? "",
       };
-      saveScore(id, score, facts, { input: 0, output: 0 });
-      logEvent(id, "gemini", "skipped", "Seeded from the September calibration table (no Gemini call)");
+      await saveScore(id, score, facts, { input: 0, output: 0 });
+      await logEvent(id, "gemini", "skipped", "Seeded from the September calibration table (no Gemini call)");
 
       const [cr, cv, cb] = seed.calibration!;
       const match = score.band === cb ? "ok " : "DIFF";
@@ -293,18 +295,11 @@ export function seedDemo(): string[] {
   }
 
   // A worked price history so the edit log has something to show.
-  const t01 = db().prepare("SELECT id FROM calls WHERE external_id = 'SEP26-T01'").get() as { id: string };
-  updatePrice({ callId: t01.id, minLakh: 25, maxLakh: 34, note: "Standard spec, 1,400 sq ft carpet", editedBy: "Nikhil" });
-  updatePrice({ callId: t01.id, minLakh: 27, maxLakh: 32, note: "Narrowed after site photos - flooring retained", editedBy: "Nikhil" });
-  const t05 = db().prepare("SELECT id FROM calls WHERE external_id = 'SEP26-T05'").get() as { id: string };
-  updatePrice({ callId: t05.id, minLakh: 58, maxLakh: 84, note: "Premium spec, full flooring replacement", editedBy: "Nikhil" });
+  const [t01] = await query<{ id: string }>("SELECT id FROM calls WHERE external_id = 'SEP26-T01'");
+  await updatePrice({ callId: t01.id, minLakh: 25, maxLakh: 34, note: "Standard spec, 1,400 sq ft carpet", editedBy: "Nikhil" });
+  await updatePrice({ callId: t01.id, minLakh: 27, maxLakh: 32, note: "Narrowed after site photos - flooring retained", editedBy: "Nikhil" });
+  const [t05] = await query<{ id: string }>("SELECT id FROM calls WHERE external_id = 'SEP26-T05'");
+  await updatePrice({ callId: t05.id, minLakh: 58, maxLakh: 84, note: "Premium spec, full flooring replacement", editedBy: "Nikhil" });
 
   return report;
-}
-
-/** With SEED_DEMO_DATA=true, load the demo calls into an empty database. Cheap no-op otherwise. */
-export function ensureDemoData(): void {
-  if (process.env.SEED_DEMO_DATA !== "true") return;
-  const { n } = db().prepare("SELECT COUNT(*) AS n FROM calls").get() as { n: number };
-  if (n === 0) seedDemo();
 }

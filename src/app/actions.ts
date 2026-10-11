@@ -21,7 +21,7 @@ export async function savePrice(_prev: PriceState, form: FormData): Promise<Pric
   const editedBy = String(form.get("editedBy") ?? "").trim().slice(0, 60) || "Nikhil";
   const note = String(form.get("note") ?? "").trim().slice(0, 500) || null;
 
-  const call = getCall(callId);
+  const call = await getCall(callId);
   if (!call) return { ok: false, error: "Lead not found" };
   if (call.outcome !== "FORWARD") return { ok: false, error: "Only qualified leads take a price range" };
   if (min === null || Number.isNaN(min) || max === null || Number.isNaN(max))
@@ -32,7 +32,7 @@ export async function savePrice(_prev: PriceState, form: FormData): Promise<Pric
   if (call.price_min_lakh === min && call.price_max_lakh === max && (call.price_note ?? null) === note)
     return { ok: true, savedAt: call.price_updated_at ?? undefined };
 
-  updatePrice({ callId, minLakh: min, maxLakh: max, note, editedBy });
+  await updatePrice({ callId, minLakh: min, maxLakh: max, note, editedBy });
   revalidatePath("/", "layout");
   return { ok: true, savedAt: new Date().toISOString() };
 }

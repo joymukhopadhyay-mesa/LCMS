@@ -22,25 +22,29 @@ const OUTPUTS: Record<Exclude<Channel, "gemini">, (c: CallRow) => Promise<StepRe
 async function runStep(call: CallRow, channel: Exclude<Channel, "gemini">): Promise<void> {
   try {
     const r = await OUTPUTS[channel](call);
-    if (channel === "hubspot" && r.contactId) setHubspotContact(call.id, r.contactId);
-    logEvent(call.id, channel, r.status, r.detail, r.ref ?? null);
+    if (channel === "hubspot" && r.contactId) await setHubspotContact(call.id, r.contactId);
+    await logEvent(call.id, channel, r.status, r.detail, r.ref ?? null);
   } catch (err) {
-    logEvent(call.id, channel, "failed", err instanceof Error ? err.message : String(err));
+    await logEvent(call.id, channel, "failed", err instanceof Error ? err.message : String(err));
   }
 }
 
 export async function scoreStep(callId: string): Promise<boolean> {
-  const call = getCall(callId);
+  const call = await getCall(callId);
   if (!call) return false;
   if (!geminiConfigured()) {
-    logEvent(callId, "gemini", "skipped", "GEMINI_API_KEY not set - lead left unscored");
+    await logEvent(callId, "gemini", "skipped", "GEMINI_API_KEY not set - lead left unscored");
+    return false;
+  }
+  if (!call.transcript.trim()) {
+    await logEvent(callId, "gemini", "skipped", "No transcript yet - Vaani's post-call message has not arrived");
     return false;
   }
   try {
     const { score, facts, usage } = await scoreCall(call);
-    saveScore(callId, score, facts, usage);
+    await saveScore(callId, score, facts, usage);
     const dropped = score.dropped_signals?.length ?? 0;
-    logEvent(
+    await logEvent(
       callId,
       "gemini",
       "sent",
@@ -50,15 +54,15 @@ export async function scoreStep(callId: string): Promise<boolean> {
     return true;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    markScoringFailed(callId, msg, err instanceof GeminiError ? err.usage : undefined);
-    logEvent(callId, "gemini", "failed", msg);
+    await markScoringFailed(callId, msg, err instanceof GeminiError ? err.usage : undefined);
+    await logEvent(callId, "gemini", "failed", msg);
     return false;
   }
 }
 
 /** Full pipeline for one call. Safe to run in the background after the webhook has responded. */
 export async function processCall(callId: string): Promise<void> {
-  const call = getCall(callId);
+  const call = await getCall(callId);
   if (!call) return;
 
   if (call.outcome === "ESCALATE") {
@@ -69,7 +73,7 @@ export async function processCall(callId: string): Promise<void> {
   if (call.outcome !== "FORWARD") return; // declines/defers/callbacks are logged on the dashboard only
 
   await scoreStep(callId);
-  const scored = getCall(callId)!;
+  const scored = (await getCall(callId))!;
   if (scored.band === "ESCALATE") {
     await runStep(scored, "telegram");
     return;
@@ -82,6 +86,6 @@ export async function retryStep(callId: string, channel: Channel): Promise<void>
     await scoreStep(callId);
     return;
   }
-  const call = getCall(callId);
+  const call = await getCall(callId);
   if (call) await runStep(call, channel);
 }

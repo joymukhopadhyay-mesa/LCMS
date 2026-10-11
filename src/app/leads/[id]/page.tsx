@@ -54,7 +54,7 @@ function Signals({ list }: { list: ScoredSignal[] }) {
 
 export default async function LeadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const c = getCall(id);
+  const c = await getCall(id);
   if (!c) notFound();
 
   const name = displayName(c);
@@ -62,8 +62,8 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
   const gates = parseGates(c.gate_results);
   const questions = [...new Set([...parseList(c.open_questions), ...(score?.open_questions ?? [])])];
   const turns = parseTranscript(c.transcript);
-  const edits = listPriceEdits(c.id);
-  const events = latestEvents(c.id);
+  const edits = await listPriceEdits(c.id);
+  const events = await latestEvents(c.id);
   const qualified = c.outcome === "FORWARD";
 
   const facts: [string, string | null][] = [
@@ -73,8 +73,20 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     ["Scope", c.scope],
     ["Timeline", c.timeline],
     ["Found us via", c.source],
-    ["Consultation", c.booking_start ? `${fmtDateTime(c.booking_start)}${c.booking_mode ? ` · ${c.booking_mode}` : ""}` : null],
+    [
+      "Consultation",
+      c.booking_start
+        ? `${fmtDateTime(c.booking_start)}${c.booking_mode ? ` · ${c.booking_mode}` : ""}`
+        : c.booking_status === "pending"
+          ? "Pending - designer to confirm a time"
+          : null,
+    ],
     ["Phone", c.caller_phone],
+    ["Current state", c.current_state && c.current_state !== "unknown" ? c.current_state.replaceAll("_", " ") : null],
+    ["Volunteered budget", c.volunteered_budget],
+    ["Language", c.language],
+    ["Asked about price", c.pricing_asked ? "Yes - deflected, no number given" : null],
+    ["Special requests", c.special_requests],
   ];
 
   return (

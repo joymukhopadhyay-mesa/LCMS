@@ -163,37 +163,70 @@ function localSlots(days: number, now: Date): Slot[] {
   return out;
 }
 
-/** Slots from the external calendar, thinned to CONSULT_SLOT_TIMES so a caller hears a few well-spread options. */
-async function externalSlots(p: CalendarProvider, days: number, now: Date): Promise<Slot[]> {
-  const from = new Date(now.getTime() + 3 * 3600_000);
-  const to = new Date(now.getTime() + (days + 4) * 24 * 3600_000);
-  const starts = await p.slots!(from.toISOString(), to.toISOString());
-  const wanted = new Set(slotTimes());
-  const preferred = starts.filter((s) => wanted.has(istParts(new Date(s)).hhmm));
-  const chosen = preferred.length ? preferred : starts;
-  const dates = [...new Set(chosen.map((s) => istParts(new Date(s)).date))].slice(0, days);
-  return chosen.filter((s) => dates.includes(istParts(new Date(s)).date)).map(toSlot);
+export type SlotQuery = {
+  /** Earliest date wanted, YYYY-MM-DD in IST. */
+  fromDate?: string | null;
+  partOfDay?: "morning" | "afternoon" | "evening" | null;
+};
+
+const PART_OF_DAY: Record<string, (hhmm: string) => boolean> = {
+  morning: (t) => t < "12:00",
+  afternoon: (t) => t >= "12:00" && t < "17:00",
+  evening: (t) => t >= "17:00",
+};
+
+/** Keep slots that match what the caller asked for. */
+function matches(s: Slot, q: SlotQuery): boolean {
+  const p = istParts(new Date(s.start));
+  if (q.fromDate && p.date < q.fromDate) return false;
+  if (q.partOfDay && !PART_OF_DAY[q.partOfDay]?.(p.hhmm)) return false;
+  return true;
 }
 
-export async function availableSlots(days = 5, now = new Date()): Promise<Slot[]> {
+/** Slots from the external calendar. Without a preference they are thinned to CONSULT_SLOT_TIMES so a caller hears a few well-spread options. */
+async function externalSlots(p: CalendarProvider, days: number, now: Date, q: SlotQuery): Promise<Slot[]> {
+  let from = new Date(now.getTime() + 3 * 3600_000);
+  if (q.fromDate) {
+    const [y, m, d] = q.fromDate.split("-").map(Number);
+    const start = istToUtc(y, m - 1, d, 0, 0);
+    if (start > from) from = start;
+  }
+  const to = new Date(from.getTime() + (days + 4) * 24 * 3600_000);
+  const starts = await p.slots!(from.toISOString(), to.toISOString());
+
+  let chosen = starts;
+  if (q.partOfDay) {
+    // Asked for a time of day: offer on-the-hour starts inside it.
+    chosen = starts.filter((s) => istParts(new Date(s)).hhmm.endsWith(":00"));
+  } else {
+    const wanted = new Set(slotTimes());
+    const preferred = starts.filter((s) => wanted.has(istParts(new Date(s)).hhmm));
+    chosen = preferred.length ? preferred : starts;
+  }
+  const slots = chosen.map(toSlot).filter((s) => matches(s, q));
+  const dates = [...new Set(slots.map((s) => istParts(new Date(s.start)).date))].slice(0, days);
+  return slots.filter((s) => dates.includes(istParts(new Date(s.start)).date));
+}
+
+export async function availableSlots(days = 5, now = new Date(), q: SlotQuery = {}): Promise<Slot[]> {
   const p = provider();
   let candidates: Slot[];
   try {
-    candidates = p.slots ? await externalSlots(p, days, now) : localSlots(days, now);
+    candidates = p.slots ? await externalSlots(p, days, now, q) : localSlots(days, now).filter((s) => matches(s, q));
   } catch (err) {
     console.error(`[calendar] ${p.name} slots failed, using local slots:`, err instanceof Error ? err.message : err);
-    candidates = localSlots(days, now);
+    candidates = localSlots(days, now).filter((s) => matches(s, q));
   }
   if (!candidates.length) return [];
 
   // Anything already booked or held through this app is taken, whichever calendar the slot came from.
-  const busy = bookedWindows(candidates[0].start, candidates.at(-1)!.end);
+  const busy = await bookedWindows(candidates[0].start, candidates.at(-1)!.end);
   return candidates.filter((s) => !busy.some((b) => s.start < b.end && s.end > b.start));
 }
 
 export async function isSlotFree(startIso: string): Promise<boolean> {
   const end = new Date(new Date(startIso).getTime() + slotMinutes() * 60_000).toISOString();
-  return bookedWindows(startIso, end).length === 0;
+  return (await bookedWindows(startIso, end)).length === 0;
 }
 
 /** Pipeline step: turn the slot Vaani held into a real calendar invite. */

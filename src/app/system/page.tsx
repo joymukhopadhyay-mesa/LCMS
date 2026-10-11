@@ -11,10 +11,10 @@ import { Icon } from "@/components/Icon";
 
 export const dynamic = "force-dynamic";
 
-export default function SystemPage() {
-  const m = metrics();
+export default async function SystemPage() {
+  const m = await metrics();
   const c = costs(m);
-  const failures = recentFailures();
+  const failures = await recentFailures();
   const base = appUrl();
 
   const integrations = [
@@ -27,9 +27,11 @@ export default function SystemPage() {
   ];
 
   const endpoints = [
-    ["Post-call webhook", "POST", "/api/webhooks/vaani"],
-    ["Tool: available slots", "GET/POST", "/api/vaani/slots"],
-    ["Tool: book consultation", "POST", "/api/vaani/book"],
+    ["Dashboard webhook (call_started, call_postprocessing)", "POST", "/api/webhooks/vaani?secret=…"],
+    ["Tool: check_availability", "GET/POST", "/api/vaani/slots"],
+    ["Tool: book_consultation", "POST", "/api/vaani/book"],
+    ["Tool: escalate_to_human", "POST", "/api/vaani/escalate"],
+    ["Tool: submit_call_outcome", "POST", "/api/vaani/outcome"],
   ];
 
   return (
@@ -91,7 +93,7 @@ export default function SystemPage() {
               </tbody>
             </table>
             <p className="muted xs" style={{ marginBottom: 0 }}>
-              Send the secret as an <span className="mono">x-webhook-secret</span> header. System prompt, tool definitions and the payload contract live in the <span className="mono">vaani/</span> folder of the project.
+              Tools send the secret as an <span className="mono">x-webhook-secret</span> header; the dashboard webhook carries it as <span className="mono">?secret=</span>. The prompt, tool definitions and payload contract are in the <span className="mono">vaani/</span> folder of the project.
             </p>
           </div>
         </section>

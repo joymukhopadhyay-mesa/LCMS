@@ -18,8 +18,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   const band = BANDS.includes(sp.band as (typeof BANDS)[number]) ? (sp.band as Band | "UNSCORED") : null;
   const pricing = sp.view === "pricing";
   const q = sp.q?.trim() || null;
-  const rows = listCalls({ view: "leads", band, pricingDue: pricing, q });
-  const m = metrics();
+  const rows = await listCalls({ view: "leads", band, pricingDue: pricing, q });
+  const m = await metrics();
 
   const chip = (label: string, href: string, active: boolean, n?: number) => (
     <Link href={href} className={`chip ${active ? "active" : ""}`}>

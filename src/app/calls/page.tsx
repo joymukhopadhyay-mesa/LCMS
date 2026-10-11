@@ -13,8 +13,8 @@ export default async function CallsPage({ searchParams }: { searchParams: Search
   const sp = await searchParams;
   const view = sp.view === "not_qualified" || sp.view === "leads" ? sp.view : "all";
   const q = sp.q?.trim() || null;
-  const rows = listCalls({ view, q });
-  const m = metrics();
+  const rows = await listCalls({ view, q });
+  const m = await metrics();
   const qs = (v: string) => `/calls?${new URLSearchParams({ ...(v !== "all" ? { view: v } : {}), ...(q ? { q } : {}) })}`;
 
   return (

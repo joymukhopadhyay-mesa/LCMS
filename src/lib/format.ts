@@ -72,6 +72,7 @@ export const OUTCOME_LABEL: Record<Outcome, string> = {
   DEFER: "Deferred",
   ESCALATE: "Escalated",
   CALLBACK: "Call back",
+  NOT_ENQUIRY: "Not an enquiry",
 };
 
 export function parseGates(json: string | null): GateResults {

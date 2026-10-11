@@ -189,7 +189,7 @@ a.stat:hover .stat-label { color: var(--secondary); }
 .pill.FORWARD, .pill.sent, .pill.pass { background: var(--ok-soft); color: var(--ok); }
 .pill.DECLINE, .pill.failed, .pill.fail { background: var(--bad-soft); color: var(--bad); }
 .pill.DEFER, .pill.pass-with-note, .pill.unresolved { background: var(--warm-soft); color: #b8770a; }
-.pill.CALLBACK, .pill.skipped, .pill.silent, .pill.not-reached { background: var(--neutral-soft); color: #6b7380; }
+.pill.CALLBACK, .pill.NOT_ENQUIRY, .pill.skipped, .pill.silent, .pill.not-reached { background: var(--neutral-soft); color: #6b7380; }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 

@@ -1,7 +1,7 @@
 // Shared domain types for the Vaani -> Gemini -> outputs pipeline.
 
-/** What Vaani decided on the call (rubric section 2.2). */
-export type Outcome = "FORWARD" | "DECLINE" | "DEFER" | "ESCALATE" | "CALLBACK";
+/** What Vaani decided on the call (rubric section 2.2). NOT_ENQUIRY = wrong number, vendor, job seeker. */
+export type Outcome = "FORWARD" | "DECLINE" | "DEFER" | "ESCALATE" | "CALLBACK" | "NOT_ENQUIRY";
 
 export type Band = "HOT" | "WARM" | "COLD" | "ESCALATE";
 
@@ -46,6 +46,16 @@ export type IncomingCall = {
   bookingStart: string | null;
   bookingEnd: string | null;
   bookingMode: string | null;
+  bookingStatus?: string | null; // confirmed | pending | none
+  language?: string | null;
+  volunteeredBudget?: string | null;
+  currentState?: string | null;
+  pricingAsked?: boolean;
+  specialRequests?: string | null;
+  vaaniAnalysis?: string | null; // raw summary/entities/dispositions JSON from the post-call event
+  /** Vaani sends the outcome record mid-call and the transcript afterwards; each flag says which has arrived. */
+  outcomeReceived?: boolean;
+  transcriptReceived?: boolean;
 };
 
 export type ScoredSignal = {
@@ -111,6 +121,17 @@ export type CallRow = {
   booking_start: string | null;
   booking_end: string | null;
   booking_mode: string | null;
+  booking_status: string | null;
+  language: string | null;
+  volunteered_budget: string | null;
+  current_state: string | null;
+  pricing_asked: number;
+  special_requests: string | null;
+  vaani_analysis: string | null;
+  phone_key: string | null;
+  outcome_received_at: string | null;
+  transcript_received_at: string | null;
+  pipeline_started_at: string | null;
   band: Band | null;
   score_total: number | null;
   readiness: number | null;

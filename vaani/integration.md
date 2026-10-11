@@ -1,97 +1,111 @@
 # Wiring Vaani to the app
 
-Three HTTP endpoints. All accept the shared secret as an `x-webhook-secret` header (or `Authorization: Bearer …`, or `?secret=`) when `VAANI_WEBHOOK_SECRET` is set.
+The agent prompt is [`system-prompt.txt`](system-prompt.txt). It defines four tools and one end-of-call record; this page says what each tool should call.
 
-| Purpose | Method | URL |
-|---|---|---|
-| Tool — available slots | `GET` or `POST` | `{APP_URL}/api/vaani/slots` |
-| Tool — book consultation | `POST` | `{APP_URL}/api/vaani/book` |
-| Post-call webhook | `POST` | `{APP_URL}/api/webhooks/vaani` |
+Everything below uses your deployed URL (`APP_URL`, e.g. `https://lead-call-management-system.vercel.app`) and the shared secret `VAANI_WEBHOOK_SECRET`.
 
-`APP_URL` must be reachable from Vaani's servers — a deployed URL, or an ngrok / cloudflared tunnel for local testing.
+## How one call flows
 
-## Tool 1 — `get_available_slots`
-
-No parameters. Response:
-
-```json
-{
-  "slots": [{ "start": "2026-10-12T05:30:00.000Z", "label": "12 Oct, 11:00 am" }],
-  "speakable": "The earliest consultation slots are 12 Oct, 11:00 am, 12 Oct, 3:00 pm, 12 Oct, 5:30 pm."
-}
+```
+caller dials ─► Vaani                                                    app
+                │ call_started webhook ─────────────────────────────►  remember caller's number
+                │ check_availability ───────────────────────────────►  open Cal.com slots
+                │ book_consultation  ───────────────────────────────►  hold the slot (by caller number)
+                │ submit_call_outcome ──────────────────────────────►  store the record → dashboard has the call
+                │   … call ends …
+                │ call_postprocessing webhook ──────────────────────►  attach transcript, then:
+                                                                         Gemini score → Telegram · email · calendar · HubSpot
 ```
 
-Slots are Mon–Sat at `CONSULT_SLOT_TIMES` (IST), at least 3 hours out, minus anything already booked or held.
+`escalate_to_human` short-circuits: the team is alerted on Telegram the moment it is called.
 
-## Tool 2 — `book_consultation`
+The outcome record arrives first (mid-call) and the transcript after. The app pairs them by call id if the agent passes one, otherwise by the caller's number (from `call_started`), otherwise by timing. If a transcript arrives with no outcome record it is kept and flagged on the dashboard ("No outcome record from Vaani") rather than dropped.
 
-```json
-{
-  "call_id":      "string, required - Vaani's id for this call (same id the webhook will send)",
-  "start":        "string, required - ISO time from get_available_slots",
-  "mode":         "site visit | studio | phone",
-  "caller_name":  "string, optional",
-  "caller_phone": "string, optional"
-}
-```
+## Tools
 
-Success: `{ "booked": true, "start": "…", "end": "…", "speakable": "You're booked for 12 Oct, 11:00 am…" }`
-Slot gone: `{ "booked": false, "error": "slot not available", "alternatives": [...], "speakable": "That time has just gone. I can offer …" }`
+Add each as a custom tool in the Vaani agent. Vaani takes a cURL request plus a plain-language description of when to use it. Send the secret as a header on every one: `x-webhook-secret: <VAANI_WEBHOOK_SECRET>`. Keep responses under Vaani's 2–3 second guidance: all four answer well inside it (the Gemini scoring runs later, in the background).
 
-The slot is **held** in the app immediately, so two callers can't take the same time. When the post-call webhook arrives with the same `call_id`, the hold becomes the lead's booking.
+### check_availability
 
-## Post-call webhook
-
-Configure Vaani's post-call analysis / extraction to produce these fields and POST them as JSON. Only `call_id` is required; everything missing is shown as "not established". The normaliser in `src/lib/vaani.ts` also accepts common aliases (camelCase, fields nested under `analysis` / `extracted_data` / `variables`, transcripts as an array of `{role, content}` turns) — adjust it there once the real payload is known.
-
-```json
-{
-  "call_id": "vaani-call-8f2c",
-  "caller_name": "Amol Patil",
-  "caller_phone": "+91 98xxx xxxxx",
-  "received_at": "2026-10-10T17:12:00Z",
-  "duration_sec": 312,
-  "recording_url": "https://…",
-  "transcript": "Vaani: …\nCaller: …",
-
-  "outcome": "FORWARD | DECLINE | DEFER | ESCALATE | CALLBACK",
-  "decline_reason": "G2 · Outside service area (Lonavala)",
-  "gate_results": {
-    "real_project":   "pass | pass-with-note | unresolved | fail | silent",
-    "service_area":   { "verdict": "pass", "note": "Kondhwa" },
-    "timeline":       "pass",
-    "budget":         "silent",
-    "decision_maker": { "verdict": "pass-with-note", "note": "Son calling; parents will attend" }
-  },
-  "open_questions": ["When would they need it complete?"],
-  "recovery_flag": false,
-
-  "locality": "Kondhwa",
-  "property_type": "3BHK, bare builder handover",
-  "carpet_area": "~1,150 sq ft",
-  "scope": "Full home",
-  "timeline": "Move in by March 2027",
-  "source": "Builder referral - Rohan Lifescapes",
-  "summary": "optional one-paragraph call summary",
-
-  "booking": { "start": "2026-10-12T05:30:00Z", "end": "2026-10-12T06:30:00Z", "mode": "site visit" }
-}
-```
-
-Response: `201 { ok, id, created: true, outcome }`. A retry with the same `call_id` returns `200 { created: false }` and does not re-run the pipeline.
-
-### What happens next
-
-1. The call is stored → it appears on the dashboard immediately (all outcomes, including declines with their reason).
-2. `ESCALATE` → Telegram alert to the team. Nothing else.
-3. `FORWARD` → Gemini scores the transcript against `knowledge/Gemini-lead-scoring-logic.txt`, then in parallel:
-   Telegram brief to designers · email to Nikhil with the price link · calendar invite · HubSpot contact + note.
-4. Each step's result (sent / skipped / failed) is logged on the lead page, with a Retry button.
-
-## Testing without Vaani
+*Use when the caller is ready to book and you need open consultation times. Pass their preferred date and part of day if they gave one.*
 
 ```bash
-npm run simulate
+curl -X POST "$APP_URL/api/vaani/slots" \
+  -H "x-webhook-secret: $VAANI_WEBHOOK_SECRET" -H "Content-Type: application/json" \
+  -d '{"preferred_date": "<YYYY-MM-DD, optional>", "part_of_day": "<morning|afternoon|evening, optional>"}'
 ```
 
-Runs slots → book → webhook against `http://localhost:3000` (pass another base URL as the first argument, and `decline` as the second for a declined call).
+Returns `{ "slots": [{ "start": "2026-10-12T05:30:00.000Z", "label": "12 Oct, 11:00 am" }], "speakable": "…" }`. An empty `slots` list means nothing is open: the prompt already says not to promise a time.
+
+### book_consultation
+
+*Use once the caller has chosen one of the times from check_availability.*
+
+```bash
+curl -X POST "$APP_URL/api/vaani/book" \
+  -H "x-webhook-secret: $VAANI_WEBHOOK_SECRET" -H "Content-Type: application/json" \
+  -d '{"start": "<start value from check_availability>", "mode": "<site visit|studio|phone>", "caller_name": "<name>", "caller_phone": "<callback number>"}'
+```
+
+Success: `{ "booked": true, "confirmation": "confirmed", … }`. Failure: `{ "booked": false, "alternatives": [...] }`. The caller's number is the key, so `caller_phone` is required. The slot is held immediately so two callers cannot take the same time.
+
+### escalate_to_human
+
+*Use for an existing client with a problem. Pass what they told you.*
+
+```bash
+curl -X POST "$APP_URL/api/vaani/escalate" \
+  -H "x-webhook-secret: $VAANI_WEBHOOK_SECRET" -H "Content-Type: application/json" \
+  -d '{"caller_name": "<name>", "callback_number": "<number>", "designer_name": "<designer>", "project_location": "<locality>", "senior_requested": <true|false>, "details": "<what is wrong>"}'
+```
+
+### submit_call_outcome
+
+*Call once before the call ends, with the full record from the prompt.*
+
+```bash
+curl -X POST "$APP_URL/api/vaani/outcome" \
+  -H "x-webhook-secret: $VAANI_WEBHOOK_SECRET" -H "Content-Type: application/json" \
+  -d '<the JSON record from the END OF CALL section of the prompt>'
+```
+
+The body is exactly the record in the prompt (`outcome`, `language`, `caller`, `project`, `gate_results`, `gate_notes`, `volunteered_budget`, `open_questions`, `pricing_asked`, `recovery_flag`, `booking`, `decline_reason`, `special_requests`). An unrecognised `outcome` returns `422` with the allowed values so the agent can correct itself. `booking.slot` should be the `start` value from check_availability.
+
+| `outcome` | Dashboard |
+|---|---|
+| `forward`, `forward_booking_pending` | Qualified lead → scored, briefed, booked |
+| `defer`, `decline` | Not qualified, with `decline_reason` and the failed gate |
+| `escalate` | Escalation |
+| `not_an_enquiry` | Not an enquiry |
+
+Optional: if Vaani can pass the call id into a tool call as a variable, include `"call_id": "<call id>"` in each tool body. It makes pairing exact instead of relying on the caller's number.
+
+## Webhook (Settings → Webhooks)
+
+Add **one** URL:
+
+```
+https://<APP_URL host>/api/webhooks/vaani?secret=<VAANI_WEBHOOK_SECRET>
+```
+
+Vaani documents no signature or custom-header option for dashboard webhooks, so the secret rides on the URL. Treat that URL as a password. The app uses two events and acknowledges the rest:
+
+- `call_started` (caller's number → call id)
+- `call_postprocessing` (`data.transcript`, `summary`, `recording_url`, `call_duration` in milliseconds, `entities`, `dispositions`)
+
+The `[hh:mm:ss] AGENT:` / `USER:` transcript is converted to `Vaani:` / `Caller:` turns.
+
+## Prompt variables
+
+The prompt uses `{{current_datetime}}`, `{{caller_number}}`, `{{previous_call_context}}` and `{{escalation_window}}`. Those are filled by Vaani, not by this app. Someone must own the escalation promise: set `{{escalation_window}}` to something a human has actually committed to (see the setup notes at the top of the prompt).
+
+## Testing without a phone
+
+```bash
+npm run simulate                    # a forwarded call: slots → book → outcome → post-call
+npm run simulate -- <url> decline
+npm run simulate -- <url> escalate
+npm run simulate -- <url> no-outcome
+```
+
+Runs against `http://localhost:3000` by default and reads the secret from `.env.local`. Each run creates real rows in whichever database the app is pointed at, so use a dev database.

@@ -1,12 +1,15 @@
 import { GATE_KEYS, type GateResult, type GateResults, type GateVerdict, type IncomingCall, type Outcome } from "./types.ts";
 
-// Normalises Vaani's post-call webhook into IncomingCall.
+// Everything Vaani sends us, normalised.
 //
-// The canonical shape is documented in vaani/post-call-webhook.md. Because the
-// exact field names depend on how the Vaani agent's post-call extraction is
-// configured, this accepts common aliases (camelCase, snake_case, nested under
-// analysis / extracted_data / variables) and transcripts given either as a
-// string or as an array of turns. Adjust here once the real payload is known.
+//  1. submit_call_outcome (tool call, mid-call): the structured record defined at the
+//     end of the Vaani system prompt -> normaliseOutcomeRecord()
+//  2. call_started webhook:  carries the caller's number -> normaliseSessionEvent()
+//  3. call_postprocessing webhook: transcript, summary, recording, entities and
+//     dispositions once the call is over -> normalisePostCall()
+//
+// Both are tolerant of small naming differences (camelCase, nesting) because the
+// LLM fills in tool arguments and Vaani's payloads are documented loosely.
 
 type Obj = Record<string, unknown>;
 
@@ -22,92 +25,18 @@ function pick(sources: Obj[], ...keys: string[]): unknown {
   return undefined;
 }
 
-const str = (v: unknown): string | null => (v === undefined || v === null || v === "" ? null : String(v));
-
-function toTranscript(v: unknown): string {
-  if (typeof v === "string") return v.trim();
-  if (Array.isArray(v)) {
-    return v
-      .map((t) => {
-        if (typeof t === "string") return t;
-        if (!isObj(t)) return "";
-        const role = String(t.role ?? t.speaker ?? t.from ?? "").toLowerCase();
-        const who = /agent|assistant|bot|ai|vaani/.test(role) ? "Vaani" : role ? "Caller" : "";
-        const text = String(t.content ?? t.text ?? t.message ?? t.transcript ?? "");
-        return who ? `${who}: ${text}` : text;
-      })
-      .filter(Boolean)
-      .join("\n");
-  }
-  return "";
-}
-
-const OUTCOME_ALIASES: Record<string, Outcome> = {
-  forward: "FORWARD",
-  qualified: "FORWARD",
-  booked: "FORWARD",
-  decline: "DECLINE",
-  declined: "DECLINE",
-  not_qualified: "DECLINE",
-  unqualified: "DECLINE",
-  defer: "DEFER",
-  deferred: "DEFER",
-  escalate: "ESCALATE",
-  escalated: "ESCALATE",
-  callback: "CALLBACK",
-  call_back: "CALLBACK",
-  missed: "CALLBACK",
-  incomplete: "CALLBACK",
-  dropped: "CALLBACK",
+const str = (v: unknown): string | null => {
+  if (v === undefined || v === null) return null;
+  const s = String(v).trim();
+  return s === "" ? null : s;
 };
 
-function toOutcome(v: unknown): Outcome {
-  const k = String(v ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  return OUTCOME_ALIASES[k] ?? "CALLBACK";
-}
-
-const VERDICTS: GateVerdict[] = ["pass", "pass-with-note", "unresolved", "fail", "silent", "not-reached"];
-
-function toGate(v: unknown): GateResult | undefined {
-  if (v === undefined || v === null) return undefined;
-  if (typeof v === "string") {
-    const verdict = v.toLowerCase().replace(/[_\s]+/g, "-") as GateVerdict;
-    return { verdict: VERDICTS.includes(verdict) ? verdict : "unresolved", note: VERDICTS.includes(verdict) ? undefined : v };
-  }
-  if (isObj(v)) {
-    const g = toGate(v.verdict ?? v.result ?? v.status);
-    return g ? { ...g, note: str(v.note ?? v.reason) ?? g.note } : undefined;
-  }
-  return undefined;
-}
-
-const GATE_ALIASES: Record<string, string[]> = {
-  real_project: ["real_project", "g1", "gate1", "gate_1", "scope"],
-  service_area: ["service_area", "g2", "gate2", "gate_2", "area", "location"],
-  timeline: ["timeline", "g3", "gate3", "gate_3"],
-  budget: ["budget", "budget_band", "g4", "gate4", "gate_4"],
-  decision_maker: ["decision_maker", "decider", "g5", "gate5", "gate_5"],
-};
-
-function toGates(v: unknown): GateResults {
-  if (!isObj(v)) return {};
-  const out: GateResults = {};
-  for (const key of GATE_KEYS) {
-    const raw = pick([v], ...GATE_ALIASES[key]);
-    const g = toGate(raw);
-    if (g) out[key] = g;
-  }
-  return out;
-}
+const toBool = (v: unknown): boolean => v === true || v === 1 || /^(true|yes|1)$/i.test(String(v ?? ""));
 
 function toList(v: unknown): string[] {
-  if (Array.isArray(v)) return v.map(String).filter(Boolean);
+  if (Array.isArray(v)) return v.map(String).map((s) => s.trim()).filter(Boolean);
   if (typeof v === "string" && v.trim()) return v.split(/\n|;/).map((s) => s.trim()).filter(Boolean);
   return [];
-}
-
-function toBool(v: unknown): boolean {
-  return v === true || v === 1 || /^(true|yes|1)$/i.test(String(v ?? ""));
 }
 
 function toIso(v: unknown): string | null {
@@ -119,48 +48,216 @@ function toIso(v: unknown): string | null {
 
 export class PayloadError extends Error {}
 
-export function normaliseVaaniPayload(body: unknown): IncomingCall {
-  if (!isObj(body)) throw new PayloadError("Body must be a JSON object");
-  const root = isObj(body.call) ? { ...body, ...body.call } : body;
-  const nested = ["analysis", "post_call_analysis", "extracted_data", "extraction", "variables", "data", "lead"]
-    .map((k) => root[k])
-    .filter(isObj);
-  const s = [root, ...nested];
-  const booking = pick(s, "booking", "consultation", "appointment");
-  const b = isObj(booking) ? booking : {};
+// ---------------------------------------------------------------- transcript
 
-  const externalId = str(pick(s, "call_id", "callId", "id", "external_id", "conversation_id", "session_id"));
-  if (!externalId) throw new PayloadError("Missing call id (call_id)");
-  const transcript = toTranscript(pick(s, "transcript", "transcription", "messages", "conversation"));
+const TURN = /^\s*(?:\[[^\]]*\]\s*)?(AGENT|ASSISTANT|BOT|AI|VAANI|USER|CALLER|CUSTOMER|HUMAN)\s*:\s*([\s\S]*)$/i;
+
+/** "[13:33:14] AGENT: Hi" / turn arrays -> "Vaani: Hi\nCaller: ..." */
+export function convertTranscript(raw: unknown): string {
+  const turns: string[] = [];
+  const push = (role: string, text: string) => {
+    const who = /^(agent|assistant|bot|ai|vaani)$/i.test(role) ? "Vaani" : "Caller";
+    const t = text.replace(/\s+/g, " ").trim();
+    if (t) turns.push(`${who}: ${t}`);
+  };
+
+  if (Array.isArray(raw)) {
+    for (const t of raw) {
+      if (typeof t === "string") {
+        const m = t.match(TURN);
+        if (m) push(m[1], m[2]);
+      } else if (isObj(t)) {
+        push(String(t.role ?? t.speaker ?? t.from ?? "user"), String(t.content ?? t.text ?? t.message ?? t.transcript ?? ""));
+      }
+    }
+    return turns.join("\n");
+  }
+  if (typeof raw !== "string") return "";
+
+  // Turns may be newline-separated or run together; split before each "[hh:mm:ss] ROLE:" marker.
+  const chunks = raw.split(/(?=\[\d{1,2}:\d{2}(?::\d{2})?\]\s*(?:AGENT|ASSISTANT|BOT|AI|VAANI|USER|CALLER|CUSTOMER|HUMAN)\s*:)/i);
+  for (const chunk of chunks.flatMap((c) => (/\[\d{1,2}:\d{2}/.test(c) ? [c] : c.split(/\r?\n/)))) {
+    const m = chunk.match(TURN);
+    if (m) push(m[1], m[2]);
+    else if (turns.length && chunk.trim()) turns[turns.length - 1] += " " + chunk.trim();
+  }
+  return turns.join("\n");
+}
+
+// ---------------------------------------------------------------- outcome record (submit_call_outcome)
+
+const OUTCOMES: Record<string, Outcome> = {
+  forward: "FORWARD",
+  forward_booking_pending: "FORWARD",
+  defer: "DEFER",
+  deferred: "DEFER",
+  decline: "DECLINE",
+  declined: "DECLINE",
+  escalate: "ESCALATE",
+  escalated: "ESCALATE",
+  not_an_enquiry: "NOT_ENQUIRY",
+  not_an_inquiry: "NOT_ENQUIRY",
+  not_enquiry: "NOT_ENQUIRY",
+  callback: "CALLBACK",
+};
+
+const VERDICTS: Record<string, GateVerdict> = {
+  pass: "pass",
+  pass_with_note: "pass-with-note",
+  fail: "fail",
+  unresolved: "unresolved",
+  unclear: "unresolved",
+  not_mentioned: "silent",
+  silent: "silent",
+};
+
+function toGates(v: unknown, notes: unknown): GateResults {
+  if (!isObj(v)) return {};
+  const noteMap = isObj(notes) ? notes : {};
+  const out: GateResults = {};
+  for (const key of GATE_KEYS) {
+    const raw = v[key];
+    const verdictRaw = isObj(raw) ? raw.verdict ?? raw.result : raw;
+    if (verdictRaw === undefined || verdictRaw === null) continue;
+    const verdict = VERDICTS[String(verdictRaw).toLowerCase().replace(/[\s-]+/g, "_")] ?? "unresolved";
+    const note = str(noteMap[key]) ?? (isObj(raw) ? str(raw.note) : null);
+    const g: GateResult = { verdict };
+    if (note) g.note = note;
+    out[key] = g;
+  }
+  return out;
+}
+
+function carpet(v: unknown): string | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(String(v).replace(/[, ]/g, ""));
+  return Number.isFinite(n) && n > 0 ? `${n.toLocaleString("en-IN")} sq ft` : str(v);
+}
+
+export type OutcomeInput = { callId: string | null; call: IncomingCall };
+
+export function normaliseOutcomeRecord(body: unknown): OutcomeInput {
+  if (!isObj(body)) throw new PayloadError("Body must be a JSON object");
+  const r = isObj(body.record) ? body.record : isObj(body.outcome_record) ? body.outcome_record : body;
+  const caller = isObj(r.caller) ? r.caller : {};
+  const project = isObj(r.project) ? r.project : {};
+  const booking = isObj(r.booking) ? r.booking : {};
+
+  const rawOutcome = str(r.outcome);
+  const outcome = rawOutcome ? OUTCOMES[rawOutcome.toLowerCase().replace(/[\s-]+/g, "_")] : undefined;
+  if (!outcome) {
+    throw new PayloadError(
+      `outcome must be one of: forward, forward_booking_pending, defer, decline, escalate, not_an_enquiry (got ${JSON.stringify(rawOutcome)})`,
+    );
+  }
+
+  const referrer = str(caller.referrer_name);
+  const how = str(caller.how_found_us);
+  const source = referrer ? `Referral - ${referrer}${how ? ` (${how})` : ""}` : how;
+
+  const slot = str(booking.slot);
+  const start = slot ? toIso(slot) : null;
+  const bookingStatus = str(booking.status)?.toLowerCase() ?? null;
+  const confirmed = outcome === "FORWARD" && bookingStatus === "confirmed" && start;
+  const topId = str(pick([body, r], "call_id", "callId", "room_name"));
+
+  const call: IncomingCall = {
+    externalId: topId ?? "",
+    callerName: str(caller.name),
+    callerPhone: str(caller.callback_number ?? caller.phone),
+    callerEmail: str(caller.email),
+    receivedAt: new Date().toISOString(),
+    durationSec: null,
+    transcript: "",
+    recordingUrl: null,
+    outcome,
+    declineReason: str(r.decline_reason),
+    gateResults: toGates(r.gate_results, r.gate_notes),
+    openQuestions: toList(r.open_questions),
+    recoveryFlag: toBool(r.recovery_flag),
+    language: str(r.language),
+    volunteeredBudget: str(r.volunteered_budget),
+    currentState: str(project.current_state),
+    pricingAsked: toBool(r.pricing_asked),
+    specialRequests: str(r.special_requests),
+    locality: str(project.locality),
+    propertyType: str(project.property) ?? str(project.type),
+    carpetArea: carpet(project.carpet_area_sqft ?? project.carpet_area),
+    scope: str(project.scope_in_callers_words ?? project.scope),
+    timeline: str(project.timeline),
+    source,
+    summary: null,
+    bookingStart: confirmed ? start : null,
+    bookingEnd: null, // filled from the held slot or the slot length
+    bookingMode: str(booking.type),
+    bookingStatus,
+    outcomeReceived: true,
+    transcriptReceived: false,
+  };
+  return { callId: topId, call };
+}
+
+// ---------------------------------------------------------------- webhook events
+
+const PHONE_KEYS = ["phone_number", "caller_number", "from_number", "contact_number", "caller", "from", "phone"];
+
+export type SessionEvent = { callId: string; phone: string | null };
+
+export function eventName(body: unknown): string | null {
+  return isObj(body) ? str(body.event ?? body.event_type ?? body.type)?.toLowerCase() ?? null : null;
+}
+
+export function normaliseSessionEvent(body: unknown): SessionEvent | null {
+  if (!isObj(body)) return null;
+  const data = isObj(body.data) ? body.data : {};
+  const callId = str(pick([body, data], "call_id", "callId", "room_name"));
+  if (!callId) return null;
+  return { callId, phone: str(pick([data, body], ...PHONE_KEYS)) };
+}
+
+export type PostCall = {
+  callId: string;
+  phone: string | null;
+  timestamp: string | null;
+  durationSec: number | null;
+  summary: string | null;
+  recordingUrl: string | null;
+  transcript: string;
+  callerName: string | null;
+  analysis: string;
+};
+
+export function normalisePostCall(body: unknown): PostCall {
+  if (!isObj(body)) throw new PayloadError("Body must be a JSON object");
+  const data = isObj(body.data) ? body.data : {};
+  const callId = str(pick([data, body], "call_id", "callId", "room_name"));
+  if (!callId) throw new PayloadError("Missing call_id");
+  const entities = isObj(data.entities) ? data.entities : isObj(body.entities) ? body.entities : {};
+  const dispositions = isObj(data.dispositions) ? data.dispositions : isObj(body.dispositions) ? body.dispositions : {};
+  const ms = Number(pick([data, body], "call_duration", "duration"));
+  const summary = str(pick([data, body], "summary", "call_summary"));
 
   return {
-    externalId,
-    callerName: str(pick(s, "caller_name", "callerName", "name", "customer_name")),
-    callerPhone: str(pick(s, "caller_phone", "callerPhone", "phone", "from_number", "from", "customer_number")),
-    callerEmail: str(pick(s, "caller_email", "email")),
-    receivedAt: toIso(pick(s, "received_at", "receivedAt", "started_at", "start_time", "created_at", "timestamp")) ?? new Date().toISOString(),
-    durationSec: Number(pick(s, "duration_sec", "duration_seconds", "duration", "call_duration")) || null,
-    transcript,
-    recordingUrl: str(pick(s, "recording_url", "recordingUrl", "recording")),
-    outcome: toOutcome(pick(s, "outcome", "disposition", "qualification", "qualification_outcome")),
-    declineReason: str(pick(s, "decline_reason", "reason", "failed_gate")),
-    gateResults: toGates(pick(s, "gate_results", "gates")),
-    openQuestions: toList(pick(s, "open_questions", "openQuestions", "unresolved")),
-    recoveryFlag: toBool(pick(s, "recovery_flag", "recovery", "previous_enquiry_unanswered")),
-    locality: str(pick(s, "locality", "location", "area")),
-    propertyType: str(pick(s, "property_type", "propertyType", "property")),
-    carpetArea: str(pick(s, "carpet_area", "carpetArea", "size")),
-    scope: str(pick(s, "scope", "project_scope")),
-    timeline: str(pick(s, "timeline", "timeline_text")),
-    source: str(pick(s, "source", "how_found", "referral_source")),
-    summary: str(pick(s, "summary", "call_summary")),
-    bookingStart: toIso(pick([b], "start", "start_time") ?? pick(s, "booking_start", "slot_start")),
-    bookingEnd: toIso(pick([b], "end", "end_time") ?? pick(s, "booking_end", "slot_end")),
-    bookingMode: str(pick([b], "mode", "type") ?? pick(s, "booking_mode")),
+    callId,
+    phone: str(pick([data, body, entities], ...PHONE_KEYS, "callback_number")),
+    timestamp: toIso(pick([body, data], "timestamp", "created_at")),
+    // call_postprocessing reports milliseconds (call_ended reports seconds).
+    durationSec: Number.isFinite(ms) && ms > 0 ? Math.round(ms / 1000) : null,
+    summary,
+    recordingUrl: str(pick([data, body], "recording_url", "recordingUrl")),
+    transcript: convertTranscript(pick([data, body], "transcript", "transcription", "messages")),
+    callerName: str(pick([entities], "name", "caller_name", "customer_name", "full_name")),
+    analysis: JSON.stringify({ summary, entities, dispositions, end_reason: data.end_reason ?? null }),
   };
 }
 
-/** Constant-time-ish secret check. Open when VAANI_WEBHOOK_SECRET is unset (local dev). */
+// ---------------------------------------------------------------- auth
+
+/**
+ * Shared-secret check. Tool calls send it as the x-webhook-secret header; Vaani's dashboard webhook
+ * has no documented custom-header option, so the secret may also ride on the URL (?secret=).
+ * Open when VAANI_WEBHOOK_SECRET is unset (local dev).
+ */
 export function webhookAuthorised(req: Request): boolean {
   const secret = process.env.VAANI_WEBHOOK_SECRET;
   if (!secret) return true;

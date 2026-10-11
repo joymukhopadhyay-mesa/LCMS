@@ -24,12 +24,12 @@ function Stat({ href, icon, tone, label, value, sub }: { href: string; icon: str
   );
 }
 
-export default function Home() {
-  const m = metrics();
+export default async function Home() {
+  const m = await metrics();
   const c = costs(m);
-  const pricingDue = listCalls({ pricingDue: true }).slice(0, 6);
-  const recent = listCalls({ view: "all" }).slice(0, 7);
-  const reasons = declineReasons();
+  const pricingDue = (await listCalls({ pricingDue: true })).slice(0, 6);
+  const recent = (await listCalls({ view: "all" })).slice(0, 7);
+  const reasons = await declineReasons();
   const maxReason = Math.max(1, ...reasons.map((r) => r.n));
   const scored = m.hot + m.warm + m.cold;
   const pct = (n: number) => (scored ? (n / scored) * 100 : 0);
