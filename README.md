@@ -65,7 +65,7 @@ See [`.env.example`](.env.example). Summary:
 |---|---|
 | `APP_URL` | Links in Telegram/email; must be public for Vaani to reach the webhook |
 | `VAANI_WEBHOOK_SECRET`, `VAANI_API_KEY` | Webhook/tool auth |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | Scoring (default `gemini-2.5-flash`) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Scoring (default `gemini-3.8-flash`) |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Designer brief |
 | `RESEND_API_KEY`, `RESEND_FROM`, `NIKHIL_EMAIL` | Price-link email (`RESEND_FROM` must be on a verified domain) |
 | `CALENDAR_PROVIDER` | `local` until a calendar is chosen |

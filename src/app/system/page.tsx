@@ -19,7 +19,7 @@ export default function SystemPage() {
 
   const integrations = [
     { name: "Vaani webhook", icon: "phone", ok: Boolean(process.env.VAANI_WEBHOOK_SECRET), env: "VAANI_WEBHOOK_SECRET", note: "Secret check on the webhook and tool endpoints. Without it they are open." },
-    { name: "Gemini", icon: "spark", ok: geminiConfigured(), env: "GEMINI_API_KEY", note: `Model: ${process.env.GEMINI_MODEL || "gemini-2.5-flash"}` },
+    { name: "Gemini", icon: "spark", ok: geminiConfigured(), env: "GEMINI_API_KEY", note: `Model: ${process.env.GEMINI_MODEL || "gemini-3.8-flash"}` },
     { name: "Telegram", icon: "send", ok: telegramConfigured(), env: "TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID", note: "Designer brief" },
     { name: "Resend", icon: "mail", ok: emailConfigured(), env: "RESEND_API_KEY, RESEND_FROM, NIKHIL_EMAIL", note: "Price-link email to Nikhil" },
     { name: "Calendar", icon: "calendar", ok: calendarConfigured(), env: "CALENDAR_PROVIDER", note: calendarConfigured() ? `Provider: ${process.env.CALENDAR_PROVIDER}` : "Provider not chosen - slots are held in this app" },
